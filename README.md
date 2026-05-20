@@ -14,7 +14,7 @@ Basit bir Node.js servisini Docker image olarak ECR'a pushlayıp ECS Fargate üz
 | --- | --- |
 | Region | `us-east-1` |
 | Account ID | `511186633739` |
-| ECR Repository | `etkim/hello-ecs` |
+| ECR Repository | `etkim-image-repository` |
 | ECR Image URI | `511186633739.dkr.ecr.us-east-1.amazonaws.com/etkim/hello-ecs` |
 | ECS Cluster | `etkim-container-cluster` |
 | ECS Task Definition | `etkim-container-td` |
