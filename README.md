@@ -73,12 +73,6 @@ IAM role `github-actions-ecs-demo`:
 
 Akış: `main` branch'e push → image build (`linux/amd64`) → ECR'a push (`:latest` ve `:<commit-sha>` tag'leri) → ECS service `--force-new-deployment` ile yeni image'ı çeker.
 
-## Demo Akışı
-
-1. `app.js` içindeki `APP_VERSION` ortam değişkenini ya da task definition'daki değeri `v1` → `v2` yap.
-2. `git commit && git push origin main`
-3. Actions sekmesinde build/deploy adımlarını izle.
-4. Aynı public IP üzerinden yeni mesajı gör.
 
 ## Faydalı CLI Komutları
 
