@@ -1,12 +1,26 @@
-# ECS + ECR Hands-on
+# etkim-container-repo
 
 Basit bir Node.js servisini Docker image olarak ECR'a pushlayıp ECS Fargate üzerinde çalıştırmak için minimal demo.
 
 ## İçerik
 
-- `app.js` — `http://<host>:3000/` adresinde "Hello from ECS! v1" döndüren tek dosyalık Node.js servisi.
+- `app.js` — `http://<host>:3000/` adresinde "SUFLE ETKİM" karşılama sayfası döndüren tek dosyalık Node.js servisi. `/health` endpoint'i de var.
 - `Dockerfile` — `node:20-alpine` üstüne kuran image tanımı, port 3000.
 - `.github/workflows/deploy.yml` — `main` branch'e push olunca image'ı build edip ECR'a pushlayan ve ECS service'ini yeniden deploy eden GitHub Actions pipeline'ı.
+
+## AWS Kaynakları
+
+| Kaynak | Değer |
+| --- | --- |
+| Region | `us-east-1` |
+| Account ID | `511186633739` |
+| ECR Repository | `etkim/hello-ecs` |
+| ECR Image URI | `511186633739.dkr.ecr.us-east-1.amazonaws.com/etkim/hello-ecs` |
+| ECS Cluster | `etkim-container-cluster` |
+| ECS Task Definition | `etkim-container-td` |
+| ECS Service | `etkim-container-td-service` |
+| Task Execution Role | `ecsTaskExecutionRole` |
+| GitHub Actions Role | `github-actions-ecs-demo` (OIDC) |
 
 ## Local Test
 
@@ -14,56 +28,93 @@ Basit bir Node.js servisini Docker image olarak ECR'a pushlayıp ECS Fargate üz
 docker build -t hello-ecs .
 docker run --rm -p 3000:3000 hello-ecs
 curl http://localhost:3000
+curl http://localhost:3000/health
 ```
 
 ## AWS Tarafında Yapılacaklar (Konsoldan)
 
-1. **ECR**: `demo-ecr` adında Private repository oluştur.
-2. **İlk image push** (local makineden, push commands ECR konsolunda hazır):
+1. **ECR**: `etkim/hello-ecs` adında Private repository oluştur.
+2. **İlk image push** (local makineden, Apple Silicon Mac'te `--platform linux/amd64` şart):
    ```bash
-   aws ecr get-login-password --region eu-central-1 \
-     | docker login --username AWS --password-stdin <account_id>.dkr.ecr.eu-central-1.amazonaws.com
+   aws ecr get-login-password --region us-east-1 \
+     | docker login --username AWS --password-stdin 511186633739.dkr.ecr.us-east-1.amazonaws.com
 
-   docker buildx build --platform linux/amd64 \
-     -t <account_id>.dkr.ecr.eu-central-1.amazonaws.com/demo-ecr:latest \
+   docker buildx build \
+     --platform linux/amd64 \
+     --provenance=false \
+     --sbom=false \
+     -t 511186633739.dkr.ecr.us-east-1.amazonaws.com/etkim/hello-ecs:latest \
      --push .
    ```
-3. **ECS Cluster**: `hello-ecs-cluster`, Fargate.
-4. **Task Definition**: `hello-ecs-task`
+3. **CloudWatch Log Group**: `/ecs/etkim-container-td` (task definition awslogs driver bunu kullanır).
+4. **ECS Cluster**: `etkim-container-cluster`, Fargate.
+5. **Task Definition**: `etkim-container-td`
    - Launch type: Fargate
+   - Operating system / Architecture: `Linux/X86_64`
    - 0.25 vCPU, 0.5 GB
    - Task execution role: `ecsTaskExecutionRole`
-   - Container: name `hello-ecs`, image `<account_id>.dkr.ecr.eu-central-1.amazonaws.com/demo-ecr:latest`, port 3000/tcp
-5. **Service**: `hello-ecs-service`
+   - Container: name `hello-ecs`, image `511186633739.dkr.ecr.us-east-1.amazonaws.com/etkim/hello-ecs:latest`, port 3000/tcp
+   - (Opsiyonel) Environment: `APP_VERSION=v1`
+6. **Service**: `etkim-container-td-service`
    - Desired tasks: 1
+   - Launch type: FARGATE
    - Public subnetler, Public IP: ENABLED
-   - Security group: inbound TCP 3000 açık (demo için 0.0.0.0/0)
-6. Task `RUNNING` olunca task'ın public IP'sinden `http://<public-ip>:3000` aç.
+   - Security group: inbound TCP 3000 açık (demo için 0.0.0.0/0), outbound default (all traffic)
+7. Task `RUNNING` olunca task'ın public IP'sinden `http://<public-ip>:3000` aç.
 
-## Pipeline
+## Pipeline (GitHub Actions + OIDC)
 
-GitHub repository secrets:
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
+GitHub repository secret:
+- `AWS_ROLE_ARN` = `arn:aws:iam::511186633739:role/github-actions-ecs-demo`
 
-IAM kullanıcısı için minimum yetkiler:
-- `AmazonEC2ContainerRegistryPowerUser`
-- ECS update-service izni (demo için `AmazonECS_FullAccess` yeterli)
+IAM role `github-actions-ecs-demo`:
+- Trust policy: `token.actions.githubusercontent.com` OIDC provider, `sub` condition `repo:barissuna02/etkim-container-repo:*`
+- Permissions: `AmazonEC2ContainerRegistryPowerUser` + `AmazonECS_FullAccess`
 
-`main` branch'e push → image build → ECR'a push → ECS service `--force-new-deployment` ile yeni image'ı çeker.
+Akış: `main` branch'e push → image build (`linux/amd64`) → ECR'a push (`:latest` ve `:<commit-sha>` tag'leri) → ECS service `--force-new-deployment` ile yeni image'ı çeker.
 
 ## Demo Akışı
 
-1. `app.js` içinde `APP_VERSION` veya mesajdaki `v1` ifadesini `v2` yap.
+1. `app.js` içindeki `APP_VERSION` ortam değişkenini ya da task definition'daki değeri `v1` → `v2` yap.
 2. `git commit && git push origin main`
-3. Actions sekmesinde build/push/deploy adımlarını izle.
+3. Actions sekmesinde build/deploy adımlarını izle.
 4. Aynı public IP üzerinden yeni mesajı gör.
+
+## Faydalı CLI Komutları
+
+Service durumu:
+```bash
+aws ecs describe-services \
+  --cluster etkim-container-cluster \
+  --services etkim-container-td-service \
+  --region us-east-1 \
+  --query 'services[0].{running:runningCount,pending:pendingCount,events:events[:3].message}'
+```
+
+Çalışan task'ın public IP'si:
+```bash
+TASK_ARN=$(aws ecs list-tasks --cluster etkim-container-cluster --service-name etkim-container-td-service --region us-east-1 --query 'taskArns[0]' --output text)
+
+ENI_ID=$(aws ecs describe-tasks --cluster etkim-container-cluster --tasks $TASK_ARN --region us-east-1 --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text)
+
+aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --region us-east-1 --query 'NetworkInterfaces[0].Association.PublicIp' --output text
+```
+
+Manuel yeni deploy:
+```bash
+aws ecs update-service \
+  --cluster etkim-container-cluster \
+  --service etkim-container-td-service \
+  --force-new-deployment \
+  --region us-east-1
+```
 
 ## Temizlik
 
 Demo bitince ücret yazmaması için:
 - ECS service'i `desired count = 0` yap, sonra sil.
 - Cluster'ı sil.
-- ECR repository'yi sil.
-# demo
-# etkim-container-repo
+- Task definition'ları deregister et (opsiyonel, ücreti yok).
+- ECR repository'yi sil (image'lar dolu olduğu için "force delete").
+- CloudWatch log group'unu sil.
+- Demo için açtığın security group'u sil.
