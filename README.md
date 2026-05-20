@@ -66,3 +66,4 @@ Demo bitince ücret yazmaması için:
 - Cluster'ı sil.
 - ECR repository'yi sil.
 # demo
+# etkim-container-repo
