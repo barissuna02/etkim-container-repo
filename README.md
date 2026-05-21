@@ -43,7 +43,7 @@ curl http://localhost:3000/health
      --platform linux/amd64 \
      --provenance=false \
      --sbom=false \
-     -t 511186633739.dkr.ecr.us-east-1.amazonaws.com/etkim/hello-ecs:latest \
+     -t 511186633739.dkr.ecr.us-east-1.amazonaws.com/etkim-image-repository:latest \
      --push .
    ```
 3. **CloudWatch Log Group**: `/ecs/etkim-container-td` (task definition awslogs driver bunu kullanır).
