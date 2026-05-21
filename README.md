@@ -36,8 +36,8 @@ curl http://localhost:3000/health
 1. **ECR**: `etkim-image-repository` adında Private repository oluştur.
 2. **İlk image push** (local makineden, Apple Silicon Mac'te `--platform linux/amd64` şart):
    ```bash
-   aws ecr get-login-password --region us-east-1 \
-     | docker login --username AWS --password-stdin 511186633739.dkr.ecr.us-east-1.amazonaws.com
+   aws ecr get-login-password --region eu-west-3 \
+     | docker login --username AWS --password-stdin 511186633739.dkr.ecr.eu-west-3.amazonaws.com
 
    docker buildx build \
      --platform linux/amd64 \
