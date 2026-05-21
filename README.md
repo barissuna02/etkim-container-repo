@@ -33,7 +33,7 @@ curl http://localhost:3000/health
 
 ## AWS Tarafında Yapılacaklar (Konsoldan)
 
-1. **ECR**: `etkim/hello-ecs` adında Private repository oluştur.
+1. **ECR**: `etkim-image-repository` adında Private repository oluştur.
 2. **İlk image push** (local makineden, Apple Silicon Mac'te `--platform linux/amd64` şart):
    ```bash
    aws ecr get-login-password --region us-east-1 \
