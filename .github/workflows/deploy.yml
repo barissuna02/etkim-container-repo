@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: etkim/hello-ecs
+  ECR_REPOSITORY: etkim-image-repository
   ECS_CLUSTER: etkim-container-cluster
   ECS_SERVICE: etkim-container-td-service
 
