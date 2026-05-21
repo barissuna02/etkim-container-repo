@@ -12,10 +12,10 @@ Basit bir Node.js servisini Docker image olarak ECR'a pushlayıp ECS Fargate üz
 
 | Kaynak | Değer |
 | --- | --- |
-| Region | `us-east-1` |
+| Region | `eu-west-3` |
 | Account ID | `511186633739` |
 | ECR Repository | `etkim-image-repository` |
-| ECR Image URI | `511186633739.dkr.ecr.us-east-1.amazonaws.com/etkim-image-repository` |
+| ECR Image URI | `511186633739.dkr.ecr.eu-west-3.amazonaws.com/etkim-image-repository` |
 | ECS Cluster | `etkim-container-cluster` |
 | ECS Task Definition | `etkim-container-td` |
 | ECS Service | `etkim-container-td-service` |
@@ -53,7 +53,7 @@ curl http://localhost:3000/health
    - Operating system / Architecture: `Linux/X86_64`
    - 0.25 vCPU, 0.5 GB
    - Task execution role: `ecsTaskExecutionRole`
-   - Container: name `hello-ecs`, image `511186633739.dkr.ecr.us-east-1.amazonaws.com/etkim/hello-ecs:latest`, port 3000/tcp
+   - Container: name `hello-ecs`, image `511186633739.dkr.ecr.eu-west3.amazonaws.com/etkim-container-app:latest`, port 3000/tcp
    - (Opsiyonel) Environment: `APP_VERSION=v1`
 6. **Service**: `etkim-container-td-service`
    - Desired tasks: 1
@@ -81,17 +81,17 @@ Service durumu:
 aws ecs describe-services \
   --cluster etkim-container-cluster \
   --services etkim-container-td-service \
-  --region us-east-1 \
+  --region eu-west- \
   --query 'services[0].{running:runningCount,pending:pendingCount,events:events[:3].message}'
 ```
 
 Çalışan task'ın public IP'si:
 ```bash
-TASK_ARN=$(aws ecs list-tasks --cluster etkim-container-cluster --service-name etkim-container-td-service --region us-east-1 --query 'taskArns[0]' --output text)
+TASK_ARN=$(aws ecs list-tasks --cluster etkim-container-cluster --service-name etkim-container-td-service --region eu-west-3 --query 'taskArns[0]' --output text)
 
-ENI_ID=$(aws ecs describe-tasks --cluster etkim-container-cluster --tasks $TASK_ARN --region us-east-1 --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text)
+ENI_ID=$(aws ecs describe-tasks --cluster etkim-container-cluster --tasks $TASK_ARN --region eu-west-3 --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text)
 
-aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --region us-east-1 --query 'NetworkInterfaces[0].Association.PublicIp' --output text
+aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --region eu-west-3 --query 'NetworkInterfaces[0].Association.PublicIp' --output text
 ```
 
 Manuel yeni deploy:
@@ -100,7 +100,7 @@ aws ecs update-service \
   --cluster etkim-container-cluster \
   --service etkim-container-td-service \
   --force-new-deployment \
-  --region us-east-1
+  --region eu-west-3
 ```
 
 ## Temizlik
