@@ -9,7 +9,7 @@ env:
   AWS_REGION: eu-west-3
   ECR_REPOSITORY: etkim-image-repository
   ECS_CLUSTER: etkim-container-cluster
-  ECS_SERVICE: etkim-container-td-service
+  ECS_SERVICE: etkim-container-td-2-service
 
 jobs:
   build:
