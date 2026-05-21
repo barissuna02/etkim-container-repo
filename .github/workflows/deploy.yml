@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: us-east-1
+  AWS_REGION: eu-west-3
   ECR_REPOSITORY: etkim-image-repository
   ECS_CLUSTER: etkim-container-cluster
   ECS_SERVICE: etkim-container-td-service
